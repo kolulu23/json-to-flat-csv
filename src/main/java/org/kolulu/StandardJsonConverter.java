@@ -15,5 +15,10 @@ public interface StandardJsonConverter extends IConverter {
      * @param inputStream  Input stream that contains certain json data
      * @param outputStream Output stream for writing csv
      */
-     void convertStandard(InputStream inputStream, OutputStream outputStream);
+    void convertStandard(InputStream inputStream, OutputStream outputStream);
+
+    @Override
+    default ConverterMode[] getConverterMode() {
+        return new ConverterMode[]{ConverterMode.STANDARD};
+    }
 }

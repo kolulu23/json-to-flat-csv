@@ -17,8 +17,14 @@ public interface LineSeparatedJsonConverter extends IConverter {
      *     {"foo": "bar"}
      * </pre>
      * into csv using input/output streams.
+     *
      * @param inputStream  Input stream that contains certain json data
      * @param outputStream Output stream for writing csv
      */
     void convertLineSeparated(InputStream inputStream, OutputStream outputStream);
+
+    @Override
+    default ConverterMode[] getConverterMode() {
+        return new ConverterMode[]{ConverterMode.LINE_SEPARATED};
+    }
 }
