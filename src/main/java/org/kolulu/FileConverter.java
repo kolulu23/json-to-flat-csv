@@ -2,6 +2,7 @@ package org.kolulu;
 
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,8 +20,10 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Take json from a single file like {@code ~/foo/flat_array.json}, write csv into another file.
@@ -34,9 +37,11 @@ public class FileConverter implements StandardJsonConverter, LineSeparatedJsonCo
 
     protected static final ConverterMode[] MODES = new ConverterMode[]{ConverterMode.LINE_SEPARATED, ConverterMode.STANDARD};
 
-    public static final ObjectMapper objectMapper = new JsonMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private static final ObjectMapper objectMapper = new JsonMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-    public static final CsvMapper csvMapper = new CsvMapper();
+    private static final CsvMapper csvMapper = new CsvMapper();
+
+    private static final int ROW_CAPACITY = 100;
 
     /**
      * Output csv file name, absolute path
@@ -94,6 +99,10 @@ public class FileConverter implements StandardJsonConverter, LineSeparatedJsonCo
         } catch (IOException e) {
             log.error("Cannot create output file nor use given outputStream");
         }
+        if (this.customHeaders != null && !this.customHeaders.isEmpty()) {
+            convertLineSeparatedWithCustomHeader(inputStream, outputStream);
+            return;
+        }
         try {
             LineIterator lineIterator = IOUtils.lineIterator(inputStream, StandardCharsets.UTF_8.name());
             ObjectWriter csvWriter = null;
@@ -123,6 +132,41 @@ public class FileConverter implements StandardJsonConverter, LineSeparatedJsonCo
             log.error("Cannot read from given input stream", e);
         } finally {
             log.debug("Closing input and output streams");
+            IOUtils.closeQuietly(inputStream);
+            IOUtils.closeQuietly(outputStream);
+        }
+    }
+
+    private void convertLineSeparatedWithCustomHeader(InputStream inputStream, OutputStream outputStream) {
+        try {
+            IOUtils.write(String.join(",", this.customHeaders), outputStream);
+        } catch (IOException e) {
+            log.error("Write Header failed", e);
+        }
+        try {
+            List<String> headers = new ArrayList<>(this.customHeaders);
+            LineIterator lineIterator = IOUtils.lineIterator(inputStream, StandardCharsets.UTF_8.name());
+            while (lineIterator.hasNext()) {
+                HashMap<String, Object> data = objectMapper.readValue(lineIterator.nextLine(), new TypeReference<>() {
+                });
+
+                StringBuilder stringBuilder = new StringBuilder(ROW_CAPACITY);
+                stringBuilder.append("\n");
+                for (int i = 0; i < headers.size() - 1; i++) {
+                    Object value = data.get(headers.get(i));
+                    value = value == null ? "" : value;
+                    stringBuilder.append(value).append(",");
+                }
+                Object value = data.get(headers.get(headers.size() - 1));
+                value = value == null ? "" : value;
+                stringBuilder.append(value);
+                IOUtils.write(stringBuilder.toString(), outputStream);
+            }
+        } catch (JacksonException e) {
+            log.error("Json parse error failed to read value into java map", e);
+        } catch (IOException e) {
+            log.error("Cannot get line iterator from given input stream", e);
+        } finally {
             IOUtils.closeQuietly(inputStream);
             IOUtils.closeQuietly(outputStream);
         }

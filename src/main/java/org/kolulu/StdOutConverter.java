@@ -9,7 +9,7 @@ import java.io.OutputStream;
  * @author kolulu
  * <br/>Created at 2022/1/8 15:14
  */
-public class StdOutConverter implements StandardJsonConverter, LineSeparatedJsonConverter {
+public class StdOutConverter implements LineSeparatedJsonConverter {
 
     protected static final ConverterMode[] MODES = new ConverterMode[]{ConverterMode.LINE_SEPARATED, ConverterMode.STANDARD};
 
@@ -20,11 +20,6 @@ public class StdOutConverter implements StandardJsonConverter, LineSeparatedJson
 
     @Override
     public void convertLineSeparated(InputStream inputStream, OutputStream outputStream) {
-        // TODO document why this method is empty
-    }
-
-    @Override
-    public void convertStandard(InputStream inputStream, OutputStream outputStream) {
         // TODO document why this method is empty
     }
 }
