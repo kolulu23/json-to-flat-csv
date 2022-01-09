@@ -1,4 +1,7 @@
-package org.kolulu;
+package org.kolulu.api;
+
+import org.kolulu.ConverterMode;
+import org.kolulu.api.IConverter;
 
 import java.io.InputStream;
 import java.io.OutputStream;

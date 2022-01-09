@@ -1,4 +1,4 @@
-package org.kolulu;
+package org.kolulu.impl;
 
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -14,16 +14,16 @@ import com.fasterxml.jackson.dataformat.csv.CsvWriteException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.kolulu.ConverterMode;
+import org.kolulu.api.AbstractFileConfigure;
+import org.kolulu.api.LineSeparatedJsonConverter;
+import org.kolulu.api.StandardJsonConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Take json from a single file like {@code ~/foo/flat_array.json}, write csv into another file.
@@ -31,7 +31,8 @@ import java.util.stream.Stream;
  * @author kolulu
  * <br/>Created at 2022/1/8 15:15
  */
-public class FileConverter implements StandardJsonConverter, LineSeparatedJsonConverter {
+@SuppressWarnings("unused")
+public class FileConverter extends AbstractFileConfigure implements StandardJsonConverter, LineSeparatedJsonConverter {
 
     private static final Logger log = LoggerFactory.getLogger(FileConverter.class);
 
@@ -40,13 +41,6 @@ public class FileConverter implements StandardJsonConverter, LineSeparatedJsonCo
     private static final ObjectMapper objectMapper = new JsonMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     private static final CsvMapper csvMapper = new CsvMapper();
-
-    private static final int ROW_CAPACITY = 100;
-
-    /**
-     * Output csv file name, absolute path
-     */
-    private String outputFileName;
 
     /**
      * Custom csv headers when not use json fields as csv headers
@@ -57,7 +51,6 @@ public class FileConverter implements StandardJsonConverter, LineSeparatedJsonCo
      * Your csv file is {@code out.csv}
      */
     public FileConverter() {
-        this.outputFileName = Paths.get("").toAbsolutePath() + File.separator + "out.csv";
         this.customHeaders = new HashSet<>();
     }
 
@@ -69,11 +62,11 @@ public class FileConverter implements StandardJsonConverter, LineSeparatedJsonCo
      * @param outputFileName Absolute path to the default output file
      */
     public FileConverter(String outputFileName) {
-        this.outputFileName = outputFileName;
+        this.setOutputFileName(outputFileName);
     }
 
     public FileConverter(String outputFileName, Set<String> customHeaders) {
-        this.outputFileName = outputFileName;
+        this.setOutputFileName(outputFileName);
         this.customHeaders = customHeaders;
     }
 
@@ -94,7 +87,7 @@ public class FileConverter implements StandardJsonConverter, LineSeparatedJsonCo
     public void convertLineSeparated(InputStream inputStream, OutputStream outputStream) {
         try {
             if (outputStream == null) {
-                outputStream = new BufferedOutputStream(FileUtils.openOutputStream(new File(outputFileName)));
+                outputStream = new BufferedOutputStream(FileUtils.openOutputStream(new File(this.getOutputFileName())));
             }
         } catch (IOException e) {
             log.error("Cannot create output file nor use given outputStream");
@@ -105,7 +98,7 @@ public class FileConverter implements StandardJsonConverter, LineSeparatedJsonCo
         }
         try {
             LineIterator lineIterator = IOUtils.lineIterator(inputStream, StandardCharsets.UTF_8.name());
-            ObjectWriter csvWriter = null;
+            ObjectWriter csvWriter;
             CsvSchema.Builder csvSchemaBuilder = CsvSchema.builder();
             if (lineIterator.hasNext()) {
                 JsonNode node = objectMapper.readTree(lineIterator.nextLine());
@@ -129,7 +122,7 @@ public class FileConverter implements StandardJsonConverter, LineSeparatedJsonCo
         } catch (JacksonException e) {
             log.error("Json parse error", e);
         } catch (IOException e) {
-            log.error("Cannot read from given input stream", e);
+            log.error("Cannot read lines from given input stream", e);
         } finally {
             log.debug("Closing input and output streams");
             IOUtils.closeQuietly(inputStream);
@@ -150,7 +143,7 @@ public class FileConverter implements StandardJsonConverter, LineSeparatedJsonCo
                 HashMap<String, Object> data = objectMapper.readValue(lineIterator.nextLine(), new TypeReference<>() {
                 });
 
-                StringBuilder stringBuilder = new StringBuilder(ROW_CAPACITY);
+                StringBuilder stringBuilder = new StringBuilder(this.getRowSize());
                 stringBuilder.append("\n");
                 for (int i = 0; i < headers.size() - 1; i++) {
                     Object value = data.get(headers.get(i));
@@ -187,7 +180,7 @@ public class FileConverter implements StandardJsonConverter, LineSeparatedJsonCo
     public void convertStandard(InputStream inputStream, OutputStream outputStream) {
         try {
             if (outputStream == null) {
-                outputStream = FileUtils.openOutputStream(new File(outputFileName));
+                outputStream = FileUtils.openOutputStream(new File(this.getOutputFileName()));
             }
         } catch (IOException e) {
             log.error("Cannot create output file nor use given outputStream");
@@ -232,14 +225,6 @@ public class FileConverter implements StandardJsonConverter, LineSeparatedJsonCo
                 useFlatJson(jsonNode, csvSchemaBuilder);
             }
         });
-    }
-
-    public String getOutputFileName() {
-        return outputFileName;
-    }
-
-    public void setOutputFileName(String outputFileName) {
-        this.outputFileName = outputFileName;
     }
 
     public Set<String> getCustomHeaders() {

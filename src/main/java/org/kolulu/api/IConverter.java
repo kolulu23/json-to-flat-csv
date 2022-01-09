@@ -1,4 +1,6 @@
-package org.kolulu;
+package org.kolulu.api;
+
+import org.kolulu.ConverterMode;
 
 /**
  * Convert json to csv.
