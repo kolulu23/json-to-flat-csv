@@ -100,12 +100,16 @@ public class MetricServiceConverter extends AbstractFileConfigure implements Lin
     @SuppressWarnings("unchecked")
     @Override
     public void convertLineSeparated(InputStream inputStream, OutputStream outputStream) {
+        if (inputStream == null) {
+            log.error("Cannot open input file");
+            return;
+        }
         try {
             if (outputStream == null) {
                 outputStream = new BufferedOutputStream(FileUtils.openOutputStream(new File(this.getOutputFileName())));
             }
         } catch (IOException e) {
-            log.error("Cannot create output file nor use given outputStream");
+            log.error("Cannot create output file nor use given outputStream: {}", e.getMessage());
         }
         LinkedList<String> headers = this.getHeaders();
         try {
