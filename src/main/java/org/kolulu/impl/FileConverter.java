@@ -140,7 +140,7 @@ public class FileConverter extends AbstractFileConfigure implements StandardJson
             List<String> headers = new ArrayList<>(this.customHeaders);
             LineIterator lineIterator = IOUtils.lineIterator(inputStream, StandardCharsets.UTF_8.name());
             while (lineIterator.hasNext()) {
-                HashMap<String, Object> data = objectMapper.readValue(lineIterator.nextLine(), new TypeReference<>() {
+                HashMap<String, Object> data = objectMapper.readValue(lineIterator.nextLine(), new TypeReference<HashMap<String, Object>>() {
                 });
 
                 StringBuilder stringBuilder = new StringBuilder(this.getRowSize());
