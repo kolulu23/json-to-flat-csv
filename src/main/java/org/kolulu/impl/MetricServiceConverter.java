@@ -15,7 +15,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Take json from file, write csv into standard output.
@@ -113,7 +115,7 @@ public class MetricServiceConverter extends AbstractFileConfigure implements Lin
         }
         LinkedList<String> headers = this.getHeaders();
         try {
-            IOUtils.write(String.join(",", headers), outputStream);
+            IOUtils.write(String.join(",", headers), outputStream, StandardCharsets.UTF_8.name());
         } catch (IOException e) {
             log.error("Write Header failed", e);
         }
@@ -172,7 +174,7 @@ public class MetricServiceConverter extends AbstractFileConfigure implements Lin
                     stringBuilder.append(infoBuilder);
                 }
                 stringBuilder.deleteCharAt(stringBuilder.length() - 1);
-                IOUtils.write(stringBuilder.toString(), outputStream);
+                IOUtils.write(stringBuilder.toString(), outputStream, StandardCharsets.UTF_8.name());
                 stringBuilder.delete(0, stringBuilder.length());
                 infoBuilder.delete(0, infoBuilder.length());
             }

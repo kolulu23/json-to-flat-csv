@@ -132,7 +132,7 @@ public class FileConverter extends AbstractFileConfigure implements StandardJson
 
     private void convertLineSeparatedWithCustomHeader(InputStream inputStream, OutputStream outputStream) {
         try {
-            IOUtils.write(String.join(",", this.customHeaders), outputStream);
+            IOUtils.write(String.join(",", this.customHeaders), outputStream, StandardCharsets.UTF_8.name());
         } catch (IOException e) {
             log.error("Write Header failed", e);
         }
@@ -153,7 +153,7 @@ public class FileConverter extends AbstractFileConfigure implements StandardJson
                 Object value = data.get(headers.get(headers.size() - 1));
                 value = value == null ? "" : value;
                 stringBuilder.append(value);
-                IOUtils.write(stringBuilder.toString(), outputStream);
+                IOUtils.write(stringBuilder.toString(), outputStream, StandardCharsets.UTF_8.name());
             }
         } catch (JacksonException e) {
             log.error("Json parse error failed to read value into java map", e);
