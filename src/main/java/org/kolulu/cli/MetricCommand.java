@@ -27,7 +27,7 @@ public class MetricCommand implements Runnable {
 
     @Option(name = {"-v", "--verbose"},
             description = "Append verbose info into output file")
-    private boolean verbose = false;
+    private boolean verbose;
 
     @Option(name = {"-i", "--input"},
             description = "Absolute path of the input json file")
